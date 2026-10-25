@@ -1,0 +1,23 @@
+# Original archive: keep a separate backup; selected references are versioned below.
+/aktion.ipa
+/analysis/scratch/
+
+# Only protocol references and the CryptoJS compatibility fixture belong in Git.
+/analysis/extracted/*
+!/analysis/extracted/Payload/
+/analysis/extracted/Payload/*
+!/analysis/extracted/Payload/Aktion.app/
+/analysis/extracted/Payload/Aktion.app/*
+!/analysis/extracted/Payload/Aktion.app/www/
+/analysis/extracted/Payload/Aktion.app/www/*
+!/analysis/extracted/Payload/Aktion.app/www/js/
+/analysis/extracted/Payload/Aktion.app/www/js/*
+!/analysis/extracted/Payload/Aktion.app/www/js/comm.js
+!/analysis/extracted/Payload/Aktion.app/www/js/login.js
+!/analysis/extracted/Payload/Aktion.app/www/js/openDoor.js
+!/analysis/extracted/Payload/Aktion.app/www/js/rsa/
+!/analysis/extracted/Payload/Aktion.app/www/js/crypto-js/
+/analysis/extracted/Payload/Aktion.app/www/js/crypto-js/*
+!/analysis/extracted/Payload/Aktion.app/www/js/crypto-js/crypto-js.js
+!/analysis/extracted/Payload/Aktion.app/www/js/crypto-js/LICENSE
+!/analysis/extracted/Payload/Aktion.app/www/js/crypto-js/README.md
