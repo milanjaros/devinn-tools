@@ -1,0 +1,13 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { createTheme, MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
+import '@mantine/core/styles.css';
+import '@mantine/notifications/styles.css';
+import '@xyflow/react/dist/style.css';
+import './styles/global.css';
+import './styles/inline-detail.css';
+import App from './app/App';
+import { StoreProvider } from './app/store';
+const theme=createTheme({primaryColor:'forest',colors:{forest:['#eff7f2','#dfebe3','#bcd4c6','#98bca7','#77a68d','#5d9477','#4c8266','#3c7056','#305c48','#244d3c']},fontFamily:'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',defaultRadius:'md',fontSizes:{xs:'11px',sm:'13px',md:'14px'},headings:{fontFamily:'inherit'},components:{Button:{defaultProps:{fw:500}},TextInput:{defaultProps:{size:'sm'}},Select:{defaultProps:{size:'sm'}},MultiSelect:{defaultProps:{size:'sm'}},Modal:{defaultProps:{overlayProps:{backgroundOpacity:.25,blur:3}}}}});
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><MantineProvider theme={theme}><Notifications position="bottom-right"/><StoreProvider><App/></StoreProvider></MantineProvider></React.StrictMode>);

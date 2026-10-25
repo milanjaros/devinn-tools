@@ -1,0 +1,21 @@
+.inline-field { width: 100%; }
+.inline-field .mantine-Input-input { border: 1px solid transparent; background: transparent; transition: border-color .15s, background .15s; }
+.inline-field:hover .mantine-Input-input { border-color: #d1ded1; background: #fafcf8; }
+.inline-field .mantine-Input-input:focus { border-color: #5d9477; background: white; }
+.inline-field .mantine-Input-input[data-error] { border-color: var(--mantine-color-error); }
+.inline-name { margin-top: 10px; }
+.inline-name .mantine-Input-input { font-size: 20px; font-weight: 600; color: #304735; text-align: center; padding: 3px 6px; height: 38px; }
+.inline-title .mantine-Input-input { text-align: center; color: #868e96; font-size: 13px; }
+.inline-department { margin-top: 8px; }
+.inline-department .mantine-Input-input { text-align: center; font-size: 12px; }
+.inline-tags .mantine-Input-input { border-color: transparent; background: transparent; transition: border-color .15s, background .15s; }
+.inline-tags:hover .mantine-Input-input { border-color: #d1ded1; background: #fafcf8; }
+.inline-tags:focus-within .mantine-Input-input { border-color: #5d9477; background: white; }
+.inline-tags .mantine-Input-description { font-size: 10px; line-height: 1.6; }
+.profile-photo { position: relative; border: 0; padding: 0; border-radius: 50%; background: transparent; display: inline-flex; flex-shrink: 0; }
+.profile-photo:disabled { opacity: 1; }
+.profile-photo-editable { cursor: pointer; }
+.profile-photo-pencil { position: absolute; bottom: 0; right: 0; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #315c4d; color: white; border: 2px solid white; opacity: 0; transform: scale(.85); transition: opacity .15s, transform .15s; }
+.profile-photo:hover .profile-photo-pencil, .profile-photo:focus-visible .profile-photo-pencil { opacity: 1; transform: scale(1); }
+.photo-inline-editor { width: 100%; margin-top: 14px; padding: 12px; border: 1px solid #dce5d9; border-radius: 9px; background: #f8faf6; text-align: left; }
+@media (hover: none) { .profile-photo-pencil { opacity: 1; transform: none; } .inline-field .mantine-Input-input, .inline-tags .mantine-Input-input { border-color: #d1ded1; } }

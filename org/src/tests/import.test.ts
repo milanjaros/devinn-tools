@@ -1,0 +1,16 @@
+import { describe, expect, it } from 'vitest';
+import { demoDataset } from '../data/demo';
+import { exportDataset, importDataset, parseImport, validateDataset } from '../domain/validation';
+describe('JSON přenos',()=>{
+  it('ověří demonstrační dataset',()=>expect(validateDataset(demoDataset()).people).toHaveLength(36));
+  it('odmítne neznámou verzi, neplatná data a duplicitní ID',()=>{expect(()=>parseImport({schemaVersion:2})).toThrow();expect(()=>parseImport({schemaVersion:1,people:[{id:'p'}]})).toThrow();expect(()=>parseImport({schemaVersion:1,tags:[{id:'t',name:'A'},{id:'t',name:'B'}]})).toThrow(/Duplicitní/);});
+  it('importuje pouze zaměstnance do existujícího katalogu',()=>{const d=demoDataset(),p={...d.people[0],id:'new'};const next=importDataset(d,{schemaVersion:1,people:[p]},'merge');expect(next.people).toHaveLength(37);expect(next.scenarios).toEqual(d.scenarios);});
+  it('podporuje částečné nahrazení lidmi a štítky',()=>{const d=demoDataset(),next=importDataset(d,JSON.parse(exportDataset(d,'people')),'replace');expect(next.people).toEqual(d.people);expect(next.scenarios[0].relationships).toHaveLength(0);});
+  it('obnoví úplný export beze ztráty',()=>{const d=demoDataset();expect(importDataset(d,JSON.parse(exportDataset(d,'all')),'replace')).toEqual(d);});
+  it('obnoví export jedné varianty včetně referencí',()=>{const d=demoDataset();const next=importDataset(d,JSON.parse(exportDataset(d,'scenario','matrix')),'replace');expect(next.scenarios).toEqual([d.scenarios[2]]);expect(next.people).toEqual(d.people);});
+  it('nepřepíše existující ID bez výslovného souhlasu',()=>{const d=demoDataset(),input={schemaVersion:1,people:[{...d.people[0],name:'Změněné jméno'}]};expect(importDataset(d,input,'merge').people[0].name).toBe(d.people[0].name);expect(importDataset(d,input,'merge',true).people[0].name).toBe('Změněné jméno');});
+  it('atomicky odmítne neplatné reference a nezmění původní data',()=>{const d=demoDataset(),copy=structuredClone(d);expect(()=>importDataset(d,{schemaVersion:1,relationships:[{id:'broken',sourceId:'missing',targetId:'p001',type:'organizational',scenarioId:'current'}]},'merge')).toThrow(/neexistující uzel/);expect(d).toEqual(copy);});
+  it('ověří štítky a pravidla více rodičů',()=>{const d=demoDataset();expect(()=>importDataset(d,{schemaVersion:1,people:[{...d.people[0],id:'new',tagIds:['missing']}]},'merge')).toThrow(/štítek/);expect(()=>importDataset(d,{schemaVersion:1,relationships:[{id:'extra',scenarioId:'current',sourceId:'p007',targetId:'p003',type:'organizational'}]},'merge')).toThrow(/nadřízených/);});
+  it('načte zjednodušený formát ze zadání',()=>{const d=demoDataset(),input={schemaVersion:1,people:[{id:'a',name:'A',title:'Lead',department:'R&D',tagIds:[]},{id:'b',name:'B',title:'Engineer',department:'R&D',tagIds:[]}],scenarios:[{id:'simple',name:'Simple',relationships:[{id:'r',sourceId:'a',targetId:'b',type:'organizational',primary:true}]}]};const next=importDataset(d,input,'replace');expect(next.scenarios[0].relationships[0].scenarioId).toBe('simple');});
+  it('uchová lokální fotografie v JSON',()=>{const d=demoDataset();d.people[0].photo='data:image/png;base64,aGVsbG8=';expect(importDataset(d,JSON.parse(exportDataset(d,'all')),'replace').people[0].photo).toBe(d.people[0].photo);});
+});
