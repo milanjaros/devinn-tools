@@ -111,7 +111,12 @@ export class AktionClient {
     const door = this.doors.find(d => String(d.Id) === String(id));
     if (!door) throw new Error('Vyber dveře z aktuálního seznamu.');
     // Never retry an actuator command: a lost response does not mean it failed.
-    try { return this.validate(await this.request(2, door.Id),'Otevření'); }
+    try {
+      const result = await this.request(2, door.Id);
+      // Real servers also acknowledge actuator commands with JSON true.
+      // Keep this exception local to opening; false and other scalars fail.
+      return result === true ? result : this.validate(result,'Otevření');
+    }
     catch (error) {
       if (error instanceof SessionExpired) throw error;
       throw new Error(`${error.message} Pokud se ztratila odpověď, příkaz už mohl být proveden. Zkontroluj vrata před dalším pokusem.`);

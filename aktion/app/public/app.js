@@ -1,10 +1,17 @@
 const $ = id => document.getElementById(id);
 let csrf='', busy=false, connected=false, demo=false, doors=[];
+let savedDoor=null;
+const transport=window.aktionTransport;
 function status(message,kind='') {$('status').textContent=message;$('status').className=`status ${kind}`;}
-function setBusy(value) {busy=value;document.querySelectorAll('button').forEach(button=>button.disabled=value);$('refresh').disabled=value||!connected;$('connect').textContent=value?'Připojuji…':'Přihlásit a načíst vstupy →';}
+function setBusy(value) {busy=value;document.querySelectorAll('button').forEach(button=>button.disabled=value);$('refresh').disabled=value||!connected;$('save-shortcut').disabled=value||!connected||!$('shortcut-door').options.length;$('connect').textContent=value?'Připojuji…':'Přihlásit a načíst vstupy →';}
 function setConnected(value) {connected=value;$('login-form').hidden=value;$('account').hidden=!value;$('connection').textContent=value?'Připojeno':'Nepřipojeno';$('connection').className=`connection ${value?'online':''}`;$('refresh').disabled=!value||busy;}
 function render(items) {
   doors=items;$('doors').replaceChildren();$('empty').hidden=connected;
+  const previous=$('shortcut-door').value||savedDoor;
+  $('shortcut-door').replaceChildren();
+  for(const door of items.filter(d=>!d.IsRele)){const option=document.createElement('option');option.value=String(door.Id);option.textContent=door.Name;$('shortcut-door').append(option);}
+  if(previous!==null&&[...$('shortcut-door').options].some(o=>o.value===previous))$('shortcut-door').value=previous;
+  $('save-shortcut').disabled=busy||!connected||!$('shortcut-door').options.length;
   if(connected&&!items.length) {const p=document.createElement('p');p.className='hint';p.textContent='Účet nemá žádné dostupné vstupy.';$('doors').append(p);}
   for(const door of items) {
     const row=document.createElement('article');row.className='door';
@@ -17,13 +24,8 @@ function render(items) {
   }
 }
 async function api(path,body) {
-  const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});
-  const result=await response.json();
-  if(!response.ok) {
-    if(response.status===401){setConnected(false);render([]);}
-    throw new Error(result.error||'Požadavek se nezdařil.');
-  }
-  return result;
+  try{return await transport.request(path,body,csrf);}
+  catch(error){if(error.status===401){setConnected(false);render([]);}throw error;}
 }
 $('login-form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;
@@ -34,12 +36,29 @@ $('login-form').addEventListener('submit',async event=>{
 });
 async function refresh() {if(busy)return;setBusy(true);status('Obnovuji seznam vstupů…');try{render((await api('/api/doors',{})).doors);status('Seznam vstupů byl aktualizován.');}catch(error){status(error.message,'error');}finally{setBusy(false);}}
 $('refresh').addEventListener('click',refresh);
-$('logout').addEventListener('click',async()=>{if(busy)return;setBusy(true);try{await api('/api/logout',{});setConnected(false);render([]);$('password').value='';status('Odhlášeno. Přihlašovací údaje byly odstraněny z relace.');}catch(error){status(error.message,'error');}finally{setBusy(false);}});
+$('logout').addEventListener('click',async()=>{if(busy)return;setBusy(true);try{await api('/api/logout',{});setConnected(false);render([]);$('password').value='';savedDoor=null;$('allow-locked').checked=false;$('shortcut-state').textContent='Není uloženo.';status(transport.native?'Odhlášeno. Uložené údaje pro Zkratky byly smazány.':'Odhlášeno. Přihlašovací údaje byly odstraněny z relace.');}catch(error){status(error.message,'error');}finally{setBusy(false);}});
 async function openDoor(door,button) {
   if(busy)return;setBusy(true);button.textContent='Odesílám…';status(`Odesílám příkaz: ${door.Name}…`);
   try{const result=await api('/api/open',{id:door.Id});status(`${door.Name}: ${result.message}`,'success');}
   catch(error){status(error.message,'error');}
   finally{render(connected?doors:[]);setBusy(false);}
 }
-async function init(){setBusy(true);try{const response=await fetch('/api/state');const state=await response.json();if(!response.ok)throw new Error(state.error);csrf=state.csrf;demo=state.demo;$('demo').hidden=!demo;$('endpoint').value=state.endpoint;if(demo){$('username').value='demo';$('password').value='demo';$('endpoint').readOnly=true;}setConnected(state.connected);if(state.connected)$('account-name').textContent='aktivní účet';render(state.doors);}catch(error){status(error.message,'error');}finally{setBusy(false);}}
+$('save-shortcut').addEventListener('click',async()=>{
+  if(busy||!connected||!$('shortcut-door').value)return;
+  setBusy(true);
+  try{const result=await api('/api/shortcut',{id:$('shortcut-door').value,allowLocked:$('allow-locked').checked});savedDoor=String(result.id);$('shortcut-state').textContent=`Uloženo: ${result.name}. V aplikaci Zkratky přidej akci Aktion Vrata.`;status('Účet a vrata byly uloženy do Klíčenky.','success');}
+  catch(error){status(error.message,'error');}finally{setBusy(false);}
+});
+$('forget-shortcut').addEventListener('click',async()=>{
+  if(busy)return;setBusy(true);
+  try{await api('/api/forget',{});savedDoor=null;$('allow-locked').checked=false;$('shortcut-state').textContent='Není uloženo.';status('Uložený účet a výběr vrat byly smazány.');}
+  catch(error){status(error.message,'error');}finally{setBusy(false);}
+});
+async function init(){setBusy(true);try{
+  const state=await api('/api/state');csrf=state.csrf;demo=state.demo;$('demo').hidden=!demo;$('endpoint').value=state.endpoint;
+  if(transport.native){$('shortcut-panel').hidden=false;$('runtime-label').textContent='BĚŽÍ V TOMTO IPHONU';$('storage-hint').textContent='Přihlášení zůstává v paměti. Tlačítkem pro Zkratky můžeš účet a jedny vrata výslovně uložit do Klíčenky.';}
+  if(state.saved){savedDoor=String(state.saved.id);$('allow-locked').checked=state.saved.allowLocked;$('shortcut-state').textContent=`Uloženo: ${state.saved.name}. Zkratka je připravena.`;$('username').value=state.saved.username;$('hwId').value=state.saved.hwId;$('loginType').value=String(state.saved.loginType);}
+  if(demo){$('username').value='demo';$('password').value='demo';$('endpoint').readOnly=true;}
+  setConnected(state.connected);if(state.connected)$('account-name').textContent='aktivní účet';render(state.doors);
+}catch(error){status(error.message,'error');}finally{setBusy(false);}}
 init();

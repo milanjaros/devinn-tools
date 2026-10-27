@@ -1,5 +1,9 @@
 # Aktion – lokální ovládání vrat
 
+## Mobilní aplikace (27. 10. 2026)
+
+Přidán iOS obal se sdíleným webovým rozhraním, přímým protokolem Aktion, Klíčenkou a akcemi pro Zkratky/Siri. Sestavení na GitHub Actions nevyžaduje vlastní Mac. Podrobný postup pro Windows demo, první nepodepsané IPA, instalaci přes AltStore a volitelný podpis Ad Hoc je v [mobile/README.md](mobile/README.md). iOS kompilaci a chování na zařízení je zatím potřeba ověřit prvním během workflow a instalací; nejde o již ověřenou CarPlay aplikaci.
+
 ## Orientace v projektu
 
 ```text

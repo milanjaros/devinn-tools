@@ -1,5 +1,14 @@
 # Original archive: keep a separate backup; selected references are versioned below.
 /aktion.ipa
+/mobile/www/
+/mobile/Aktion.xcodeproj/
+/mobile/generated/
+/mobile/Core/.build/
+/mobile/Core/.swiftpm/
+/output/
+*.p12
+*.mobileprovision
+*.xcarchive/
 /analysis/scratch/
 
 # Only protocol references and the CryptoJS compatibility fixture belong in Git.

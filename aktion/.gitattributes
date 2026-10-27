@@ -1,0 +1,2 @@
+# Use CRLF in working copies for text; let Git detect and preserve binary files.
+* text=auto eol=crlf

@@ -79,6 +79,22 @@ test('uncertain open is sent once, and requires a known door',async()=>{
   client.ready=true;client.key='secret';client.sessionId='0'.repeat(32);client.doors=[{Id:1,Name:'Test'}];
   await assert.rejects(client.open(1),/už mohl být proveden/);assert.equal(calls,1);
 });
+test('open accepts encrypted true and objects, rejects other scalars without replay',async()=>{
+  for(const result of [true,{},false,null,'true',1,{Error:5}]) {
+    let calls=0;
+    const client=new AktionClient({endpoint:'http://127.0.0.1:1',username:'demo',password:'demo',transport:async()=>{
+      calls++;
+      return new Response(JSON.stringify(encrypt(JSON.stringify(result),client.key)));
+    }});
+    client.ready=true;client.key='secret';client.sessionId='0'.repeat(32);client.doors=[{Id:1,Name:'Test'}];
+    if(result===true || (result && typeof result==='object' && !result.Error))assert.deepEqual(await client.open(1),result);
+    else await assert.rejects(client.open(1),/Otevření:/);
+    assert.equal(calls,1);
+    // Boolean success must not become valid for authentication or key exchange.
+    assert.throws(()=>client.validate(true,'Přihlášení',true),/Přihlášení:/);
+    assert.throws(()=>client.validate(true,'Výměna klíče'),/Výměna klíče:/);
+  }
+});
 test('local web API enforces origin/CSRF and completes a demo flow',async t=>{
   const mock=await startMock(),app=createApp({demoEndpoint:mock.endpoint});
   await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));

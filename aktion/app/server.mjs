@@ -9,7 +9,7 @@ import { createFileLogger } from './logger.mjs';
 
 export function createApp({demoEndpoint, defaultEndpoint='http://213.168.177.207:8090', logger=()=>{}} = {}) {
   const sessions = new Map();
-  const staticFiles = new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']]]);
+  const staticFiles = new Map([['/',['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/transport.js',['transport.js','text/javascript; charset=utf-8']],['/style.css',['style.css','text/css; charset=utf-8']]]);
   const server = http.createServer(async (req,res) => {
     const reply = (code,value) => {res.writeHead(code,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(value));};
     res.setHeader('Cache-Control','no-store'); res.setHeader('X-Content-Type-Options','nosniff');

@@ -1,5 +1,7 @@
 # Lokální ovládání vrat Aktion
 
+Stejné webové rozhraní používá i připravovaná iOS aplikace. Návod k sestavení přes GitHub Actions, instalaci a Zkratkám je v [../mobile/README.md](../mobile/README.md). Lokální Node režim níže zůstává dostupný pro Windows; nemá přístup k iOS Klíčence ani Siri.
+
 Vyžaduje Node.js 22 nebo novější, bez dalších balíčků a instalací.
 
 1. Spusť `Start.cmd` (nebo `node server.mjs`).
@@ -25,6 +27,8 @@ IsEnabled u relé znamená aktuální stav, nikoli zákaz ovládání. Přepína
 Původní protokol používá HTTP a veřejný RSA klíč neposkytuje ověření identity serveru. Aplikace tento protokol reprodukuje. Pokud správce poskytuje HTTPS adresu, můžeš ji použít ve formuláři.
 
 ## Diagnostické logy
+
+Oprava z 27. 10. 2026: log potvrdil, že skutečný server při otevření (metoda 2) vrací šifrovanou JSON hodnotu `true`. Klient ji nyní přijímá jako potvrzení příkazu; dříve chybně hlásil neočekávanou odpověď. Hodnota `false` a jiné skalární odpovědi zůstávají odmítnuté. Příkaz se automaticky neopakuje. Oprava byla ověřena lokálními testy bez ovládání skutečných vrat; pro načtení změny restartuj server.
 
 Při spuštění přes `Start.cmd`, `Demo.cmd` nebo `node server.mjs` se logy automaticky zapisují do `app/logs/aktion-RRRR-MM-DD.jsonl` (datum a čas UTC). Každý řádek je samostatný JSON. Po změně kódu je nutné server restartovat. Starší pokusy před zavedením logování nelze zpětně obnovit.
 

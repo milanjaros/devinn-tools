@@ -1,0 +1,40 @@
+name: Aktion
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: cs
+packages:
+  AktionCore:
+    path: Core
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Aktion:
+    type: application
+    platform: iOS
+    sources:
+      - path: iOS
+      - path: www
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: AktionCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.aktion.personal
+        CODE_SIGN_STYLE: Manual
+    info:
+      path: generated/Info.plist
+      properties:
+        CFBundleDisplayName: Aktion Vrata
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSLocalNetworkUsageDescription: Připojení k serveru Aktion v místní síti.
+    scheme: {}

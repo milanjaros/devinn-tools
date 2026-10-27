@@ -1,0 +1,129 @@
+name: iOS app
+
+on:
+  push:
+    paths:
+      - 'app/**/*.mjs'
+      - 'app/public/**'
+      - 'app/package.json'
+      - 'app/package-lock.json'
+      - 'mobile/**/*.swift'
+      - 'mobile/**/*.mjs'
+      - 'mobile/**/*.py'
+      - 'mobile/project.yml'
+      - 'mobile/**/Package.resolved'
+      - '.github/workflows/ios.yml'
+  pull_request:
+    paths:
+      - 'app/**/*.mjs'
+      - 'app/public/**'
+      - 'app/package.json'
+      - 'app/package-lock.json'
+      - 'mobile/**/*.swift'
+      - 'mobile/**/*.mjs'
+      - 'mobile/**/*.py'
+      - 'mobile/project.yml'
+      - 'mobile/**/Package.resolved'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+    inputs:
+      signed:
+        description: 'Export signed Ad Hoc IPA (requires signing secrets and registered iPhone)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node app/app.test.mjs
+      - run: node mobile/web.test.mjs
+      - run: node mobile/prepare.mjs
+
+  ios:
+    needs: web
+    runs-on: macos-15
+    env:
+      # Override via repository Variables once you register your own App ID.
+      BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID || 'cz.aktion.personal' }}
+      SIGNED_BUILD: ${{ github.event_name == 'workflow_dispatch' && inputs.signed && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare shared web UI
+        run: node mobile/prepare.mjs
+      - name: Test native protocol (no real server)
+        run: swift test --package-path mobile/Core
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate --spec mobile/project.yml
+          xcodebuild -version
+      - name: Install signing assets
+        if: env.SIGNED_BUILD == 'true'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$CERTIFICATE_BASE64" && test -n "$PROFILE_BASE64" || { echo 'Missing iOS signing secrets'; exit 1; }
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          KEYCHAIN="$RUNNER_TEMP/aktion-signing.keychain-db"
+          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN"
+          security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          python3 mobile/signing.py
+      - name: Archive application
+        run: |
+          set -euo pipefail
+          if [ "$SIGNED_BUILD" = true ]; then
+            xcodebuild -project mobile/Aktion.xcodeproj -scheme Aktion -configuration Release \
+              -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Aktion.xcarchive" \
+              PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" DEVELOPMENT_TEAM="$IOS_TEAM" \
+              PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_UUID" CODE_SIGN_IDENTITY='Apple Distribution' archive
+          else
+            xcodebuild -project mobile/Aktion.xcodeproj -scheme Aktion -configuration Release \
+              -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Aktion.xcarchive" \
+              PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" CODE_SIGNING_ALLOWED=NO archive
+          fi
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          if [ "$SIGNED_BUILD" = true ]; then
+            xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Aktion.xcarchive" \
+              -exportPath output -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          else
+            mkdir -p "$RUNNER_TEMP/ipa/Payload"
+            cp -R "$RUNNER_TEMP/Aktion.xcarchive/Products/Applications/Aktion.app" "$RUNNER_TEMP/ipa/Payload/"
+            (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/output/Aktion-unsigned.ipa" Payload)
+          fi
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aktion-iOS-${{ env.SIGNED_BUILD == 'true' && 'adhoc' || 'unsigned' }}
+          path: output/*.ipa
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove signing assets
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/aktion-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/certificate.p12" "$RUNNER_TEMP/profile.mobileprovision" "$RUNNER_TEMP/profile.plist"

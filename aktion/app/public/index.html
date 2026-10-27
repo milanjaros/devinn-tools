@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vrata · Aktion</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Vrata · Aktion</title><link rel="stylesheet" href="style.css"><script src="transport.js" defer></script><script src="app.js" defer></script></head>
 <body><main>
 <header><span class="connection" id="connection">Nepřipojeno</span></header>
 <aside class="demo" id="demo" hidden>DEMO REŽIM · Žádné spojení se skutečnými vraty. Přihlášení: demo / demo.</aside>
@@ -8,9 +8,10 @@
 <label for="username">Přihlašovací jméno</label><input id="username" name="username" required autocomplete="username">
 <label for="password">Heslo nebo PIN</label><input id="password" name="password" type="password" required autocomplete="current-password">
 <details><summary>Další nastavení</summary><label for="loginType">Typ přihlášení</label><select id="loginType" name="loginType"><option value="0">Standardní účet</option><option value="4">PIN</option></select><label for="hwId">ID zařízení <span class="muted">(volitelné)</span></label><input id="hwId" name="hwId" autocomplete="off"><p class="hint">Pokud správce vyžaduje registrované zařízení, použij jeho přidělené ID. Jinak se vytvoří nové.</p></details>
-<button class="primary" id="connect" type="submit">Přihlásit a načíst vstupy <span>→</span></button><p class="hint">Heslo se neukládá na disk. Relace skončí odhlášením nebo po 30 minutách nečinnosti.</p></form>
+<button class="primary" id="connect" type="submit">Přihlásit a načíst vstupy <span>→</span></button><p class="hint" id="storage-hint">Heslo se neukládá na disk. Relace skončí odhlášením nebo po 30 minutách nečinnosti.</p></form>
 <div id="account" hidden><p>Přihlášen jako <strong id="account-name"></strong></p><button id="logout" class="secondary">Odhlásit se</button></div></section>
 <section class="panel doors-panel"><div class="section-title"><span class="step">02</span><h2>Tvoje vstupy</h2><button id="refresh" class="text-button" disabled>Obnovit ↻</button></div><div class="empty" id="empty"><div class="gate" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><h3>Vrata čekají na připojení</h3><p>Po přihlášení se tu zobrazí dostupné vstupy.</p></div><div id="doors"></div></section></div>
+<section class="panel shortcut-panel" id="shortcut-panel" hidden><h2>Zkratka pro iPhone</h2><p class="hint">Vyber jedny vrata pro akci „Otevřít uložená vrata“ v aplikaci Zkratky. Účet, heslo a výběr se uloží do Klíčenky tohoto iPhonu.</p><label for="shortcut-door">Vrata pro zkratku</label><select id="shortcut-door"></select><label class="check"><input type="checkbox" id="allow-locked"> Povolit také akci „Otevřít vrata z auta“ při zamčeném telefonu</label><p class="hint">Volitelná akce z auta funguje bez ověření totožnosti přes Siri. Vyžaduje odemčení telefonu alespoň jednou po restartu.</p><button id="save-shortcut" class="secondary">Uložit účet a vrata pro Zkratky</button><button id="forget-shortcut" class="text-button">Smazat uložené nastavení</button><p class="hint" id="shortcut-state">Není uloženo.</p></section>
 <div class="status" id="status" role="status" aria-live="polite">Připraveno k připojení.</div>
-<footer><span><span class="dot"></span> BĚŽÍ NA TOMTO POČÍTAČI</span><span>Ovládání přes tvůj účet Aktion</span></footer>
+<footer><span id="runtime-label"><span class="dot"></span> BĚŽÍ NA TOMTO POČÍTAČI</span><span>Ovládání přes tvůj účet Aktion</span></footer>
 </main></body></html>
